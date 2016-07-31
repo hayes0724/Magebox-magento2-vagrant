@@ -1,0 +1,6 @@
+.git
+.vagrant
+auth.json
+scripts/local
+todo.md
+error.log

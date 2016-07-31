@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+##########################
+## ENVIROMENT VARIABLES ##
+##########################
+
+# Auth.json
+GITHUB_TOKEN=""
+AUTH_USER=""
+AUTH_PASS=""

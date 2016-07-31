@@ -1,0 +1,40 @@
+##########################
+## SERVER CONFIGURATION ##
+##########################
+
+# Web Server
+WEB_SERVER="nginx" # Server Software: Nginx or Apache
+HOST_NAME='mage2.dev'
+
+# Database
+DATABASE_SOFTWARE="mysql" # Database Software: MySQL 5.6, Percona & MariaDB
+DATABASE_NAME='magento'
+DATABASE_USER='magento'
+DATABASE_PASS='mage1234'
+
+# PHP (5 or 7)
+PHP_VERSION=5
+
+# Magento Settings
+INSTALL_DIR="/home/vagrant/mage2"
+MAGENTO_HOME="$INSTALL_DIR/public_html"
+AUTO_INSTALL="composer" # Choose Magento2 auto installer method: composer or git
+
+# Magento2 Install variables
+base_url='http://www.'$HOST_NAME''
+db_password=$DATABASE_PASS
+db_host='localhost'
+db_name=$DATABASE_NAME
+db_user=$DATABASE_USER
+admin_firstname='Name'
+admin_lastname='Lastname'
+admin_email='your@email.com'
+admin_url='admin_123'
+admin_user='admin'
+admin_password='mage1234'
+language='en_US'
+currency='USD'
+timezone='America/Chicago'
+
+# Error log
+ERR_LOG="/home/vagrant/error.log"
