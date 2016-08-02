@@ -2,6 +2,10 @@
 ## SERVER CONFIGURATION ##
 ##########################
 
+# Server Settings
+USER_NAME='vagrant' # will be used for creating server and web user
+USER_GROUP='www-data'
+
 # Web Server
 WEB_SERVER="nginx" # Server Software: Nginx or Apache
 HOST_NAME='mage2.dev'
@@ -16,7 +20,7 @@ DATABASE_PASS='mage1234'
 PHP_VERSION=5
 
 # Magento Settings
-INSTALL_DIR="/home/vagrant/mage2"
+INSTALL_DIR="/home/$USER_NAME/mage2"
 MAGENTO_HOME="$INSTALL_DIR/public_html"
 AUTO_INSTALL="composer" # Choose Magento2 auto installer method: composer or git
 
@@ -37,4 +41,4 @@ currency='USD'
 timezone='America/Chicago'
 
 # Error log
-ERR_LOG="/home/vagrant/error.log"
+ERR_LOG="/home/$USER_NAME/error.log"
