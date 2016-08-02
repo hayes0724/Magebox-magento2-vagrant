@@ -102,10 +102,20 @@ PHPServer () {
 		sudo apt-get install python-software-properties
 		sudo apt-get update && sudo apt-get -y upgrade
 		sudo apt-get -y install php5.6-fpm php5.6-cli php5.6-gd php-imagick php5.6-mysql php5.6-mcrypt php-pear php5.6-curl php5.6-intl php5.6-gd php5.6-xsl php5.6-mbstring php5.6-mcrypt php5.6-zip
-		PHP_TIME="date.timezone = ""$timezone"
-		sudo mv /etc/php/5.6/cli/php.ini ~/php.ini
-		echo $PHP_TIME >> ~/php.ini
-		sudo mv /php.ini /etc/php/5.6/cli/php.ini
+		
+		#php.ini settings - memory
+		phpmemory_limit=1024M
+		PHP_TIME=$timezone
+		sudo sed -i 's/memory_limit = .*/memory_limit = '${phpmemory_limit}'/' /etc/php/5.6/cli/php.ini
+		
+		#php.in settings - always_populate_raw_post_data
+		sudo sed -i 's/always_populate_raw_post_data = /always_populate_raw_post_data = -1/' /etc/php/5.6/cli/php.ini
+		
+		#php.ini settings - time
+		sudo bash -c "cat /etc/php/5.6/cli/php.ini >> $PHP_TIME"
+
+		#copy CLi php.ini to FPM
+		sudo cp /etc/php/5.6/cli/php.ini /etc/php/5.6/fpm/php.ini
 		
 		# PHP Mcrypt
 		sudo ln -s /etc/php/5.6/conf.d/mcrypt.ini /etc/php/5.6/mods-available/mcrypt.ini
