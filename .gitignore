@@ -1,6 +1,9 @@
 .git
 .vagrant
 auth.json
-scripts/local
+share/scripts/local
+share/scripts/env
 todo.md
 error.log
+share/restore/db/*
+share/restore/media/*

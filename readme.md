@@ -1,4 +1,4 @@
-## Magebox - Magento2 Vagrant 
+## Magebox - Magento2 Vagrant
 Simple vagrant setup for Magento2 that provsions all necessary software then installs Magento2 via git or composer.
 
 ### Main Features
@@ -17,7 +17,7 @@ Simple vagrant setup for Magento2 that provsions all necessary software then ins
 	1. If using git instead of Composer to install Magento2 then add your Github access token also
 	2. Instructions for getting credentials: [Magento Authentication](http://devdocs.magento.com/guides/v2.0/install-gde/prereq/dev_install.html#generate-authentication-tokens)
 3. `Vagrant up`
-4. Add `192.168.33.10 mage2.dev www.mage2.dev` in 
+4. Add `192.168.33.10 mage2.dev www.mage2.dev` in
 	1. ![Windows](docs/images/windows.png) `C:\Windows\System32\drivers\etc\hosts`
 	2. ![Linux](docs/images/linux.png) `/etc/hosts`
 5. Your site is now installed and ready to use, go to `www.mage2.dev`
@@ -31,20 +31,20 @@ Simple vagrant setup for Magento2 that provsions all necessary software then ins
 ### Customization
 All enviroment variables such software used, database name/password, etc... are all editable from one simple file "env". This will be in a shared folder ~/env on the guest machine.
 
-##### Web Server 
+##### Web Server
 ```shell
 WEB_SERVER="nginx" # options: nginx or apache
 HOST_NAME='mage2.dev'
 ```
 
-##### Database 
+##### Database
 ```shell
 DATABASE_SOFTWARE="mysql" # Options: mysql, percona & mariadb
 DATABASE_NAME='magento'
 DATABASE_USER='magento'
 DATABASE_PASS='mage1234'
 ```
-##### PHP 
+##### PHP
 ```shell
 PHP_VERSION=5 # Only 5.6 is supported currently
 ```
@@ -100,26 +100,3 @@ magebox php:install			Install PHP server from config settings
 WEB SERVER
 magebox web:install 		Install web server from config settings
 ```
-### Roadmap
-
-#### Software
-
-- [x] apache
-- [x] percona
-- [x] mariadb
-- [ ] php7
-- [ ] php-fpm 5.5.9
-- [ ] memcache
-- [ ] redis
-- [ ] varnish
-- [ ] opcache gui
-- [ ] xdebug
-
-#### Support
-
-- [ ] Windows phpstorm configuration files and instructions
-
-#### Features
-
-- [ ] reinstall script to reset magento install
-- [ ] hostmanager to setup hosts file
