@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-#set -x
+ #Uncomment below for debugging setup issues
+ #set -x
 
 IMPORT_PATH="/home/vagrant/share"
 
@@ -549,6 +550,11 @@ elif [ "$1" == "web:install" ]
 elif [ "$1" == "ssl:disable" ]
 	then
 	DisableSSL
+
+elif [ "$1" == "ssl:enable" ]
+  then
+  EnableSSL
+
 elif [ "$1" == "mode:developer" ]
 	then
 	MagentoDeveloperMode '1'

@@ -1,7 +1,6 @@
 .git
 .vagrant
 auth.json
-share/scripts/local
 share/scripts/env
 todo.md
 error.log

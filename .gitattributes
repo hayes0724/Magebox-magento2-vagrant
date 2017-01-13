@@ -1,0 +1,5 @@
+# Auto detect text files and perform LF normalization
+env text eol=lf
+env.example text eol=lf
+magebox text eol=lf
+Vagrantfile text eol=lf

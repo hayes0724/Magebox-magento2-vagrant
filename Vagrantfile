@@ -19,18 +19,20 @@ use_nfs_for_synced_folders = !OS.is_windows
 
 VAGRANTFILE_API_VERSION = "2"
 
-  
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # All Vagrant configuration is done here. The most common configuration
   # options are documented and commented below. For a complete reference,
   # please see the online documentation at vagrantup.com.
-  
-  # box name.  Any box from vagrant share or a box from a custom URL. 
+
+  # box name.  Any box from vagrant share or a box from a custom URL.
   config.vm.box = "ubuntu/trusty64"
+  config.ssh.username = "vagrant"
+  config.ssh.password = "vagrant"
   config.ssh.private_key_path = "~/.ssh/id_rsa"
   config.ssh.forward_agent = true
-  
-  # box modifications, including memory limits and box name. 
+
+  # box modifications, including memory limits and box name.
   config.vm.provider "virtualbox" do |vb|
      vb.name = "mage2"
      vb.memory = 4096
@@ -40,21 +42,21 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   ## IP to access box
   config.vm.network "private_network", ip: "192.168.33.10"
 
-  # If you want to share an additional folder, (such as a project root). 
-  # If you experience slow throughput or performance on the folder share, you 
-  # might have to use an OS specific share. 
-  # 
+  # If you want to share an additional folder, (such as a project root).
+  # If you experience slow throughput or performance on the folder share, you
+  # might have to use an OS specific share.
+  #
   # Default Share:
   # config.vm.synced_folder "../data", "/vagrant_data"
-  # 
-  # NFS Share, Good for Unix based OS (Mac OSX, Linux): 
+  #
+  # NFS Share, Good for Unix based OS (Mac OSX, Linux):
   # config.vm.synced_folder ".", "/vagrant", type: "nfs"
   #
   # SMB Share, good for Windows:
   # (If experiencing issues, upgrade PowerShell to V 3.0)
   # config.vm.synced_folder ".", "/vagrant", type: "smb"
-  
- 
+
+
 
   if use_nfs_for_synced_folders
       config.vm.synced_folder "mage2", guest_magento_dir, type: "nfs", create: true
@@ -71,7 +73,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   # Bootstrap VM with software that needs to be installed as web user
-  if auto_installer_enabled 
+  if auto_installer_enabled
     config.vm.provision "shell" do |s|
       s.path = "share/scripts/magebox"
       s.args = "install"
