@@ -1,25 +1,26 @@
 ## Magebox - Magento2 Vagrant
-Simple vagrant setup for Magento2 that provsions all necessary software then installs Magento2 via git or composer.
+Simple vagrant setup for Magento2 that provisions all necessary software then installs Magento2 via git or composer. Works on Windows and Linux, can be used without vagrant directly on Ubuntu.
 
 ### Main Features
 + Install your choice of software automatically with one vagrant box
++ Easily switch between Apache, Nginx, PHP 5/7, etc.... with one line of code
 + Installs Magento2 via GIT or Composer automatically with `vagrant up`
 + All settings are in one file "env" to allow you to quickly customize any settings.
 
 ### Software
 + NGINX or Apache
 + MySQL, Percona or MariaDB
-+ PHP-FPM 5.6
++ PHP-FPM 5.6 or 7
 
 ### Installation
-1. `git clone https://github.com/hayes0724/mage2-vagrant-windows.git`
+1. `git clone https://github.com/hayes0724/mage2-vagrant-windows.git project-name`
 2. Add your Magento Connect authentication credentials to the global enviroment file "env"
 	1. If using git instead of Composer to install Magento2 then add your Github access token also
 	2. Instructions for getting credentials: [Magento Authentication](http://devdocs.magento.com/guides/v2.0/install-gde/prereq/dev_install.html#generate-authentication-tokens)
 3. `Vagrant up`
 4. Add `192.168.33.10 mage2.dev www.mage2.dev` in
-	1. ![Windows](docs/images/windows.png) `C:\Windows\System32\drivers\etc\hosts`
-	2. ![Linux](docs/images/linux.png) `/etc/hosts`
+	1. Windows: `C:\Windows\System32\drivers\etc\hosts`
+	2. Linux: `/etc/hosts`
 5. Your site is now installed and ready to use, go to `www.mage2.dev`
 
 ### Usage
@@ -29,7 +30,7 @@ Simple vagrant setup for Magento2 that provsions all necessary software then ins
 + Password: mage1234
 
 ### Customization
-All enviroment variables such software used, database name/password, etc... are all editable from one simple file "env". This will be in a shared folder ~/env on the guest machine.
+All environment variables such software used, database name/password, etc... are all editable from one simple file "env". This will be in a shared folder ~/share/scripts/env on the guest machine.
 
 ##### Web Server
 ```shell
@@ -78,25 +79,41 @@ timezone='America/Chicago'
 ```
 
 ##### Magebox script
-magebox script is located in ~/scripts folder in guest machine.
+Magebox script is located in ~/share/scripts folder in guest machine. It is automatically run with vagrant up but can be used to install outside of vagrant or make changes after first provision.
 
 ```shell
-GENRAL
-magebox bootstrap			Install all required software (PHP, Apache/Nginx, Mysql, etc..)
-magebox help				Shows commands avaliable
-magebox enviroment  		Shows current enviroment variables
+Usage: magebox [command] [-d]
 
-MAGENTO2 INSTALL
-magebox install				Install Magento2 based on enviroment settings
-magebox install:git			Install Magento2 with git
-magebox install:composer	Install Magento2 with Composer
+ GENERAL
+magebox bootstrap       Install all required software (PHP, Apache/Nginx, Mysql, etc..)
+magebox help            Shows commands available
+magebox enviroment      Shows current environment variables
 
-DATABASE
-magebox database:install 	Install database from config settings
+ MAGENTO2 INSTALL
+magebox install              Install Magento2 based on environment settings
+magebox install:git          Install Magento2 with git
+magebox install:composer     Install Magento2 with Composer
+magebox install:sample       Install magento sample data with composer
 
-PHP SERVER
-magebox php:install			Install PHP server from config settings
+ SSL
+magebox ssl:disable          Disables SSL in the database
+magebox ssl:enable           Enables SSL in database
+magebox ssl:makecert         Create a self signed SSL cert and add to web server
 
-WEB SERVER
-magebox web:install 		Install web server from config settings
+ RESTORE
+magebox restore:database     Restore database from the restore/db folder will choose latest if multiples
+magebox restore:media        Restore media from the restore/media folder will choose latest if multiples
+
+ MODE
+magebox mode:developer 		 	 set magento to developer mode
+magebox mode:production 	 	 set magento to production mode
+
+ DATABASE
+magebox database:install     Reinstall database server from env settings
+
+ PHP SERVER
+magebox php:install          Reinstall PHP server from env settings
+
+ WEB SERVER
+magebox web:install          Reinstall web server from env settings
 ```

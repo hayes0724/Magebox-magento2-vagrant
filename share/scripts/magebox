@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
- #Uncomment below for debugging setup issues
- #set -x
+# Uncomment below for debugging setup issues
+# set -x
 
 IMPORT_PATH="/home/vagrant/share"
 
@@ -36,7 +36,7 @@ w=$(tput setaf 7)
 Usage () {
 cat << EOF
 $w
-Usage: $b magebox [command] [-d] $w
+Usage: magebox [command] [-d]
 
 $g GENERAL $w
 $b magebox bootstrap $w      Install all required software (PHP, Apache/Nginx, Mysql, etc..)
@@ -44,31 +44,32 @@ $b magebox help $w           Shows commands avaliable
 $b magebox enviroment $w     Shows current enviroment variables
 
 $g MAGENTO2 INSTALL $w
-magebox install              Install Magento2 based on enviroment settings
-magebox install:git          Install Magento2 with git
-magebox install:composer     Install Magento2 with Composer
-magebox install:sample       Install magento sample data with composer
-
-$g DATABASE $w
-magebox database:install     Install database from config settings
-
-$g PHP SERVER $w
-magebox php:install          Install PHP server from config settings
-
-$g WEB SERVER $w
-magebox web:install          Install web server from config settings
+$b magebox install $w              Install Magento2 based on enviroment settings
+$b magebox install:git $w          Install Magento2 with git
+$b magebox install:composer $w     Install Magento2 with Composer
+$b magebox install:sample $w       Install magento sample data with composer
 
 $g SSL $w
-magebox ssl:disable          Diables SSL in the database
-magebox ssl:enable           Enables SSL in database
+$b magebox ssl:disable $w         Diables SSL in the database
+$b magebox ssl:enable $w           Enables SSL in database
+$b magebox ssl:makecert $w         Create a self signed SSL cert and add to web server
 
 $g RESTORE $w
-magebox restore:database     Restore database from the restore/db folder will choose latest if multiples
-magebox restore:media        Restore media from the restore/media folder will choose latest if multiples
+$b magebox restore:database $w     Restore database from the restore/db folder will choose latest if multiples
+$b magebox restore:media $w        Restore media from the restore/media folder will choose latest if multiples
 
 $g MODE $w
-magebox mode:developer 		 set magento to developer mode
-magebox mode:production 	 set magento to production mode
+$b magebox mode:developer $w 		 set magento to developer mode
+$b magebox mode:production $w 	 set magento to production mode
+
+$g DATABASE $w
+$b magebox database:install $w     Install database from config settings
+
+$g PHP SERVER $w
+$b magebox php:install $w          Install PHP server from config settings
+
+$g WEB SERVER $w
+$b magebox web:install $w          Install web server from config settings
 
 EOF
 }
@@ -76,12 +77,14 @@ EOF
 Logo () {
 echo $(tput setaf 5)
 cat << "EOF"
-                             ___.
-  _____ _____     ____   ____\_ |__   _______  ___
- /     \\__  \   / ___\_/ __ \| __ \ /  _ \  \/  /
-|  Y Y  \/ __ \_/ /_/  >  ___/| \_\ (  <_> >    <
-|__|_|  (____  /\___  / \___  >___  /\____/__/\_ \
-      \/     \//_____/      \/    \/            \/
+___  ___  ___   _____  _____ ______  _____ __   __
+|  \/  | / _ \ |  __ \|  ___|| ___ \|  _  |\ \ / /
+| .  . |/ /_\ \| |  \/| |__  | |_/ /| | | | \ V /
+| |\/| ||  _  || | __ |  __| | ___ \| | | | /   \
+| |  | || | | || |_\ \| |___ | |_/ /\ \_/ // /^\ \
+\_|  |_/\_| |_/ \____/\____/ \____/  \___/ \/   \/
+
+        ------ Magento 2 Helper ------
 
 EOF
 echo $(tput setaf 9)
@@ -178,16 +181,15 @@ PHPServer () {
 		echo "PHP7 not avaliable yet"
 	elif [ -z "$1" ]
     	then
-		echo "[x] FATAL ERROR: No PHP server selected" > $ERR_LOG
+		echo "[x] FATAL ERROR: No PHP server selected"
 		exit 1
 	else
-		echo "[x] FATAL ERROR: Invalid PHP server selected (valid choices: 5 or 6) - you have selected "$1"" > $ERR_LOG
+		echo "[x] FATAL ERROR: Invalid PHP server selected (valid choices: 5 or 6) - you have selected "$1"" 
 		exit 1
 	fi
 }
 
 # Web Server Functions
-
 WebServer () {
 	green 'Installing Web Server: ' $1
 	if [ "$1" = "nginx" ]
@@ -224,8 +226,8 @@ server {
 
     #SSL Config - uncomment to enable
     #listen 443 ssl;
-    #ssl_certificate /etc/nginx/ssl/nginx.crt;
-    #ssl_certificate_key /etc/nginx/ssl/nginx.key;
+    #ssl_certificate /etc/nginx/ssl/'$HOST_NAME'.crt;
+    #ssl_certificate_key /etc/nginx/ssl/'$HOST_NAME'.key;
     set $MAGE_ROOT '$MAGENTO_HOME';
     set $MAGE_MODE developer; # or production
 
@@ -267,7 +269,7 @@ APACHE_CONFIG=
 	sudo mv -f ~/magento2.conf 	/etc/apache2/sites-enabled/magento2.conf
 
 	elif [ -z "$1" ]
-    	then
+    then
 		red "FATAL ERROR: No Web server selected"
 		exit 1
 	else
@@ -276,18 +278,54 @@ APACHE_CONFIG=
 	fi
 }
 
+GetWebServerConfig () {
+  if [ "$WEB_SERVER" = "nginx" ]
+    then
+    echo "/etc/nginx/sites-available/m2"
+  elif [ "$WEB_SERVER" = "apache" ]
+    then
+    echo "/etc/apache2/sites-available/magento2.conf"
+  fi
+}
+
 DisableSSL () {
-	red 'Disableing SSL in database'
+	red 'Disableing SSL in Magento database'
+  mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = 'http://www.$HOST_NAME' WHERE path IN ('web/secure/base_url');"
 	mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = '0' WHERE path IN ('web/secure/use_in_frontend');"
 	mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = '0' WHERE path IN ('web/secure/use_in_adminhtml');"
 	mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = '0' WHERE path IN ('web/secure/enable_upgrade_insecure');"
+  green 'Disabeling SSL in database'
+  sudo sed -i 's/listen 443 ssl/#listen 443 ssl/' $(GetWebServerConfig)
+  sudo sed -i 's/listen 443 ssl/#listen 443 ssl/' $(GetWebServerConfig)
+  sudo sed -i 's/ssl_certificate_key/#ssl_certificate_key/' $(GetWebServerConfig)
+  WebServerRestart
 }
 
 EnableSSL () {
-	green 'Enabling SSL in database'
+	green 'Enabling SSL in Magento database'
+  mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = 'https://www.$HOST_NAME' WHERE path IN ('web/secure/base_url');"
 	mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = '1' WHERE path IN ('web/secure/use_in_frontend');"
 	mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = '1' WHERE path IN ('web/secure/use_in_adminhtml');"
 	mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = '1' WHERE path IN ('web/secure/enable_upgrade_insecure');"
+  green 'Enabling SSL in web server'
+  sudo sed -i 's/#listen 443 ssl/listen 443 ssl/' $(GetWebServerConfig)
+  sudo sed -i 's/#ssl_certificate/ssl_certificate/' $(GetWebServerConfig)
+  sudo sed -i 's/#ssl_certificate_key/ssl_certificate_key/' $(GetWebServerConfig)
+  WebServerRestart
+}
+
+MakeCert () {
+  if [ "$WEB_SERVER" = "nginx" ]
+  then
+    SSL_DIR="/etc/nginx/ssl"
+  else
+    SSL_DIR="/etc/apache/ssl"
+  fi
+  sudo mkdir -p "$SSL_DIR"
+  # Generate our Private Key, CSR and Certificate
+  sudo openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
+    -subj "/C=US/ST=NY/L=New York/O=Magento/OU=IT Department/CN=*.$HOST_NAME" \
+    -keyout $SSL_DIR/$HOST_NAME.key  -out $SSL_DIR/$HOST_NAME.crt
 }
 
 Enviroment () {
@@ -397,10 +435,10 @@ Permissions () {
 
 WebServerRestart () {
 	green "Restarting " $1 " Webserver "
-	if [ "$1" = 'nginx' ]; then
+	if [ "$WEB_SERVER" = 'nginx' ]; then
 		sudo nginx -t
 		sudo service nginx restart
-	elif [ "$1" = 'apache' ]; then
+	elif [ "$WEB_SERVER" = 'apache' ]; then
 		sudo service apache2 restart
 		#sudo apache2ctl restart
 	else
@@ -494,14 +532,14 @@ elif [ "$1" == "install" ]
 	MagentoInstall "$AUTO_INSTALL"
 	Mcli
 	Permissions
-	WebServerRestart "$WEB_SERVER"
+	WebServerRestart
 
 elif [ "$1" == "install:git" ]
 	then
 	Mgit
 	Mcli
 	Permissions
-	WebServerRestart "$WEB_SERVER"
+	WebServerRestart
 
 elif [ "$1" == "install:composer" ]
 	then
@@ -509,7 +547,7 @@ elif [ "$1" == "install:composer" ]
 	Mcomposer
 	Mcli
 	Permissions
-	WebServerRestart "$WEB_SERVER"
+	WebServerRestart
 
 elif [ "$1" == "install:sample" ]
 	then
@@ -545,7 +583,7 @@ elif [ "$1" == "php:install" ]
 elif [ "$1" == "web:install" ]
 	then
 	WebServer "$WEB_SERVER"
-	WebServerRestart "$WEB_SERVER"
+	WebServerRestart
 
 elif [ "$1" == "ssl:disable" ]
 	then
@@ -554,6 +592,10 @@ elif [ "$1" == "ssl:disable" ]
 elif [ "$1" == "ssl:enable" ]
   then
   EnableSSL
+
+elif [ "$1" == "ssl:makecert" ]
+  then
+  MakeCert
 
 elif [ "$1" == "mode:developer" ]
 	then
