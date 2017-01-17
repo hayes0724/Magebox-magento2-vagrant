@@ -1,5 +1,5 @@
 ## Magebox - Magento2 Vagrant
-Simple vagrant setup for Magento2 that provisions all necessary software then installs Magento2 via git or composer. Works on Windows and Linux, can be used without vagrant directly on Ubuntu.
+Simple vagrant setup for Magento2 that provisions all necessary software then installs Magento2 via git or composer. Works on Windows 10 and Linux, can be used without vagrant directly on Ubuntu.
 
 ### Main Features
 + Install your choice of software automatically with one vagrant box
@@ -29,6 +29,13 @@ Simple vagrant setup for Magento2 that provisions all necessary software then in
 + Username: admin
 + Password: mage1234
 
+### SSL
+If you wish to use SSL you can create a self signed cert automatically and have magebox configure it with your installed web server
+```shell
+magebox ssl:makecert
+```
+To enable SSL
+
 ### Customization
 All environment variables such software used, database name/password, etc... are all editable from one simple file "env". This will be in a shared folder ~/share/scripts/env on the guest machine.
 
@@ -47,7 +54,7 @@ DATABASE_PASS='mage1234'
 ```
 ##### PHP
 ```shell
-PHP_VERSION=5 # Only 5.6 is supported currently
+PHP_VERSION=7 # Options: 5, 7
 ```
 
 ##### Auth.json

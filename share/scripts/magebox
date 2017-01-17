@@ -3,13 +3,27 @@
 # Uncomment below for debugging setup issues
 # set -x
 
-IMPORT_PATH="/home/vagrant/share"
+############
+### LOGO ###
+############
 
-#################################
-## IMPORT ENVIROMENT VARIABLES ##
-#################################
+Logo () {
+echo $(tput setaf 5)
+cat << "EOF"
+___  ___  ___   _____  _____ ______  _____ __   __
+|  \/  | / _ \ |  __ \|  ___|| ___ \|  _  |\ \ / /
+| .  . |/ /_\ \| |  \/| |__  | |_/ /| | | | \ V /
+| |\/| ||  _  || | __ |  __| | ___ \| | | | /   \
+| |  | || | | || |_\ \| |___ | |_/ /\ \_/ // /^\ \
+\_|  |_/\_| |_/ \____/\____/ \____/  \___/ \/   \/
 
-. "$IMPORT_PATH"/scripts/env
+        ------ Magento 2 Helper ------
+
+EOF
+echo $(tput setaf 9)
+}
+
+Logo
 
 ############
 ## COLORS ##
@@ -28,6 +42,22 @@ r=$(tput setaf 1)
 g=$(tput setaf 2)
 b=$(tput setaf 4)
 w=$(tput setaf 7)
+
+#################################
+## IMPORT ENVIROMENT VARIABLES ##
+#################################
+
+IMPORT_PATH="/home/vagrant/share"
+
+ENVIROMENT=''$IMPORT_PATH'/scripts/env'
+if [ -e "$ENVIROMENT" ]
+then
+  green "Using user created enviroment file"
+  . $ENVIROMENT
+else
+  red "Using example enviroment file! You will need to enter credentials to install Magento"
+  . $IMPORT_PATH/scripts/env.example
+fi
 
 ###############
 ## FUNCTIONS ##
@@ -72,22 +102,6 @@ $g WEB SERVER $w
 $b magebox web:install $w          Install web server from config settings
 
 EOF
-}
-
-Logo () {
-echo $(tput setaf 5)
-cat << "EOF"
-___  ___  ___   _____  _____ ______  _____ __   __
-|  \/  | / _ \ |  __ \|  ___|| ___ \|  _  |\ \ / /
-| .  . |/ /_\ \| |  \/| |__  | |_/ /| | | | \ V /
-| |\/| ||  _  || | __ |  __| | ___ \| | | | /   \
-| |  | || | | || |_\ \| |___ | |_/ /\ \_/ // /^\ \
-\_|  |_/\_| |_/ \____/\____/ \____/  \___/ \/   \/
-
-        ------ Magento 2 Helper ------
-
-EOF
-echo $(tput setaf 9)
 }
 
 ServerUpdate () {
@@ -152,39 +166,33 @@ PHPServer () {
 		sudo apt-get install python-software-properties
 		sudo apt-get update && sudo apt-get -y upgrade
 		sudo apt-get -y install php5.6-fpm php5.6-cli php5.6-gd php-imagick php5.6-mysql php5.6-mcrypt php-pear php5.6-curl php5.6-intl php5.6-gd php5.6-xsl php5.6-mbstring php5.6-mcrypt php5.6-zip
-
 		#php.ini settings - memory
 		phpmemory_limit=1024M
 		PHP_TIME=$timezone
 		sudo sed -i 's/memory_limit = .*/memory_limit = '${phpmemory_limit}'/' /etc/php/5.6/cli/php.ini
-
 		#php.in settings - always_populate_raw_post_data
 		sudo sed -i 's/always_populate_raw_post_data = /always_populate_raw_post_data = -1/' /etc/php/5.6/cli/php.ini
-
 		#php.ini settings - time
 		sudo bash -c "cat /etc/php/5.6/cli/php.ini >> $PHP_TIME"
-
 		zend_extension="/usr/local/php/modules/xdebug.so"
-
 		#copy CLi php.ini to FPM
 		sudo cp /etc/php/5.6/cli/php.ini /etc/php/5.6/fpm/php.ini
-
 		# PHP Mcrypt
 		sudo ln -s /etc/php/5.6/conf.d/mcrypt.ini /etc/php/5.6/mods-available/mcrypt.ini
 		sudo php5enmod mcrypt
 		sudo service php5.6-fpm restart
 
-
 	elif [ "$1" == "7" ]
 		then
-		#TODO: add/test PHP7
-		echo "PHP7 not avaliable yet"
+      sudo add-apt-repository -y ppa:ondrej/php
+      sudo apt-get update
+      sudo apt-get install -y php7.0-fpm php7.0-mysql php7.0-cli php7.0-mcrypt php7.0-curl php7.0-gd php7.0-intl php7.0-xsl php7.0-zip php7.0-mbstring
 	elif [ -z "$1" ]
     	then
 		echo "[x] FATAL ERROR: No PHP server selected"
 		exit 1
 	else
-		echo "[x] FATAL ERROR: Invalid PHP server selected (valid choices: 5 or 6) - you have selected "$1"" 
+		echo "[x] FATAL ERROR: Invalid PHP server selected (valid choices: 5 or 6) - you have selected "$1""
 		exit 1
 	fi
 }
@@ -209,10 +217,18 @@ WebServer () {
 		 	echo "Deleteing the file now"
 		 fi
 
-		 #create new config based on user settings
+if [ $PHP_VERSION = '7' ]
+then
+  PHP_SOCK='unix:/var/run/php/php7.0-fpm.sock'
+elif [ $PHP_VERSION = '5' ]
+then
+  PHP_SOCK='unix:/var/run/php/php5.6-fpm.sock'
+fi
+
+#create new config based on user settings
 NGINX_CONFIG='
 upstream fastcgi_backend {
-  server   unix:/var/run/php/php5.6-fpm.sock;
+  server   '$PHP_SOCK';
 }
 
 server {
@@ -511,8 +527,6 @@ SetupUpgrade () {
 ##   MAIN Loop  ##
 ##################
 
-Logo
-
 if [ "$1" == "bootstrap" ]
 	then
 	ServerUpdate
@@ -567,14 +581,6 @@ elif [ "$1" == "restore:database" ]
 elif [ "$1" == "restore:media" ]
 	then
 	RestoreMedia
-
-elif [ "$1" == "restore:apps" ]
-	then
-	Restore apps $2
-
-elif [ "$1" == "restore:theme" ]
-	then
-	Restore theme $2
 
 elif [ "$1" == "php:install" ]
 	then
