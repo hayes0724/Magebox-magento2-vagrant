@@ -246,11 +246,9 @@ server {
 server {
     server_name www.'$HOST_NAME';
     listen 80;
-
-    #SSL Config - uncomment to enable
     #listen 443 ssl;
-    #ssl_certificate /etc/nginx/ssl/'$HOST_NAME'.crt;
-    #ssl_certificate_key /etc/nginx/ssl/'$HOST_NAME'.key;
+    #ssl_certificate /etc/ssl/'$HOST_NAME'.crt;
+    #ssl_certificate_key /etc/ssl/'$HOST_NAME'.key;
     set $MAGE_ROOT '$MAGENTO_HOME';
     set $MAGE_MODE developer; # or production
 
@@ -279,17 +277,39 @@ APACHE_CONFIG='
     Require all granted
   </Directory>
 
-  ErrorLog '$INSTALL_DIR'/error.log
+  ErrorLog '$INSTALL_DIR'/logs/error.log
   LogLevel warn
-  CustomLog '$INSTALL_DIR'/access.log combined
+  CustomLog '$INSTALL_DIR'/logs/access.log combined
 
 </VirtualHost>'
+APACHE_SSL='
+<VirtualHost *:443>
+    DocumentRoot '$MAGENTO_HOME'
+    ServerName www.'$HOST_NAME'
+
+    <Directory '$MAGENTO_HOME'>
+      Options Indexes FollowSymLinks
+      AllowOverride All
+      Require all granted
+    </Directory>
+
+    ErrorLog '$INSTALL_DIR'/logs/error.log
+    LogLevel warn
+    CustomLog '$INSTALL_DIR'/logs/access.log combined
+    SSLEngine on
+    SSLCertificateFile /etc/ssl/'$HOST_NAME'.crt
+    SSLCertificateKeyFile /etc/ssl/'$HOST_NAME'.key
+</VirtualHost>'
+
 	sudo a2dissite 000-default.conf
 	sudo rm -f /etc/apache2/sites-enabled/000-default.conf
 	# Add the Apache virtual host file
 	echo "$APACHE_CONFIG" > ~/magento2.conf
+  echo "$APACHE_SSL" > ~/magento2ssl.conf
 	sudo mv -f ~/magento2.conf 	/etc/apache2/sites-available/magento2.conf
+  sudo mv -f ~/magento2ssl.conf 	/etc/apache2/sites-available/magento2ssl.conf
   sudo a2ensite magento2.conf
+  sudo a2ensite magento2ssl.conf
   sudo a2enmod rewrite
 	elif [ -z "$1" ]
     then
@@ -311,39 +331,51 @@ GetWebServerConfig () {
   fi
 }
 
+EnableSSL () {
+	green 'Enabling SSL in Magento database'
+  mysql -u $db_user -p$db_password -D $db_name -e "REPLACE INTO core_config_data (SCOPE, SCOPE_ID, PATH, VALUE) VALUES ('default', '0', 'web/secure/base_url', 'https://www.$HOST_NAME'/);"
+  mysql -u $db_user -p$db_password -D $db_name -e "REPLACE INTO core_config_data (SCOPE, SCOPE_ID, PATH, VALUE) VALUES ('default', '0', 'web/secure/use_in_frontend', '1');"
+  mysql -u $db_user -p$db_password -D $db_name -e "REPLACE INTO core_config_data (SCOPE, SCOPE_ID, PATH, VALUE) VALUES ('default', '0', 'web/secure/use_in_adminhtml', '1');"
+  mysql -u $db_user -p$db_password -D $db_name -e "REPLACE INTO core_config_data (SCOPE, SCOPE_ID, PATH, VALUE) VALUES ('default', '0', 'web/secure/enable_upgrade_insecure', '1');"
+}
+
 DisableSSL () {
 	red 'Disableing SSL in Magento database'
-  mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = 'http://www.$HOST_NAME' WHERE path IN ('web/secure/base_url');"
+  mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = 'http://www.$HOST_NAME'/ WHERE path IN ('web/secure/base_url');"
 	mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = '0' WHERE path IN ('web/secure/use_in_frontend');"
 	mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = '0' WHERE path IN ('web/secure/use_in_adminhtml');"
 	mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = '0' WHERE path IN ('web/secure/enable_upgrade_insecure');"
+}
+
+WebServerDisableSSL () {
   green 'Disabeling SSL in database'
-  sudo sed -i 's/listen 443 ssl/#listen 443 ssl/' $(GetWebServerConfig)
-  sudo sed -i 's/listen 443 ssl/#listen 443 ssl/' $(GetWebServerConfig)
-  sudo sed -i 's/ssl_certificate_key/#ssl_certificate_key/' $(GetWebServerConfig)
+  if [ "$WEB_SERVER" = "nginx" ]
+  then
+    sudo sed -i 's/listen 443 ssl/#listen 443 ssl/' $(GetWebServerConfig)
+    sudo sed -i 's/listen 443 ssl/#listen 443 ssl/' $(GetWebServerConfig)
+    sudo sed -i 's/ssl_certificate_key/#ssl_certificate_key/' $(GetWebServerConfig)
+  else
+    sudo a2dissite magento2ssl.conf
+  fi
   WebServerRestart
 }
 
-EnableSSL () {
-	green 'Enabling SSL in Magento database'
-  mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = 'https://www.$HOST_NAME' WHERE path IN ('web/secure/base_url');"
-	mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = '1' WHERE path IN ('web/secure/use_in_frontend');"
-	mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = '1' WHERE path IN ('web/secure/use_in_adminhtml');"
-	mysql -u $db_user -p$db_password -D $db_name -e "UPDATE core_config_data SET value = '1' WHERE path IN ('web/secure/enable_upgrade_insecure');"
+WebServerEnableSSL () {
   green 'Enabling SSL in web server'
-  sudo sed -i 's/#listen 443 ssl/listen 443 ssl/' $(GetWebServerConfig)
-  sudo sed -i 's/#ssl_certificate/ssl_certificate/' $(GetWebServerConfig)
-  sudo sed -i 's/#ssl_certificate_key/ssl_certificate_key/' $(GetWebServerConfig)
+  if [ "$WEB_SERVER" = "nginx" ]
+  then
+    sudo sed -i 's/#listen 443 ssl/listen 443 ssl/' $(GetWebServerConfig)
+    sudo sed -i 's/#ssl_certificate/ssl_certificate/' $(GetWebServerConfig)
+    sudo sed -i 's/#ssl_certificate_key/ssl_certificate_key/' $(GetWebServerConfig)
+  else
+    sudo a2ensite magento2ssl.conf
+    sudo a2enmod ssl
+  fi
   WebServerRestart
 }
 
 MakeCert () {
-  if [ "$WEB_SERVER" = "nginx" ]
-  then
-    SSL_DIR="/etc/nginx/ssl"
-  else
-    SSL_DIR="/etc/apache/ssl"
-  fi
+  SSL_DIR="/etc/ssl"
   sudo mkdir -p "$SSL_DIR"
   # Generate our Private Key, CSR and Certificate
   sudo openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
@@ -602,10 +634,12 @@ elif [ "$1" == "web:install" ]
 elif [ "$1" == "ssl:disable" ]
 	then
 	DisableSSL
+  WebServerDisableSSL
 
 elif [ "$1" == "ssl:enable" ]
   then
   EnableSSL
+  WebServerEnableSSL
 
 elif [ "$1" == "ssl:makecert" ]
   then
