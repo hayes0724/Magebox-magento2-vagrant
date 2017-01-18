@@ -6,6 +6,7 @@ Simple vagrant setup for Magento2 that provisions all necessary software then in
 + Easily switch between Apache, Nginx, PHP 5/7, etc.... with one line of code
 + Installs Magento2 via GIT or Composer automatically with `vagrant up`
 + All settings are in one file "env" to allow you to quickly customize any settings.
++ Restore most recent database and media files automatically
 
 ### Software
 + NGINX or Apache
@@ -35,6 +36,19 @@ If you wish to use SSL you can create a self signed cert automatically and have 
 magebox ssl:makecert
 ```
 To enable SSL
+```shell
+magebox ssl:enable
+```
+
+### Restore database and media files
+Restore Database: Copy database file (.sql) to share/restore/db, This will update your URL's on import to match vagrant box
+```shell
+magebox restore:database
+```
+Restore Media: copy your media (.tgz) file to share/restore/media
+```shell
+magebox restore:media
+```
 
 ### Customization
 All environment variables such software used, database name/password, etc... are all editable from one simple file "env". This will be in a shared folder ~/share/scripts/env on the guest machine.
