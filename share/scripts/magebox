@@ -166,8 +166,7 @@ PHPServer () {
 		sudo apt-get install python-software-properties
 		sudo apt-get update && sudo apt-get -y upgrade
 		sudo apt-get -y install php5.6-fpm php5.6-cli php5.6-gd php-imagick php5.6-mysql php5.6-mcrypt php-pear php5.6-curl php5.6-intl php5.6-gd php5.6-xsl php5.6-mbstring php5.6-mcrypt php5.6-zip
-		#php.ini settings - memory
-		phpmemory_limit=1024M
+
 		PHP_TIME=$timezone
 		sudo sed -i 's/memory_limit = .*/memory_limit = '${phpmemory_limit}'/' /etc/php/5.6/cli/php.ini
 		#php.in settings - always_populate_raw_post_data
@@ -187,12 +186,20 @@ PHPServer () {
       sudo add-apt-repository -y ppa:ondrej/php
       sudo apt-get update
       sudo apt-get install -y php7.0-fpm php7.0-mysql php7.0-cli php7.0-mcrypt php7.0-curl php7.0-gd php7.0-intl php7.0-xsl php7.0-zip php7.0-mbstring
+      if [ $WEB_SERVER = 'apache' ]
+      then
+        sudo apt-get install libapache2-mod-php7.0
+        sudo a2enmod php7.0
+      fi
+      sudo sed -i 's/memory_limit = .*/memory_limit = '${phpmemory_limit}'/' /etc/php/7.0/cli/php.ini
+      sudo sed -i 's/memory_limit = .*/memory_limit = '${phpmemory_limit}'/' /etc/php/7.0/fpm/php.ini
+      sudo service php7.0-fpm restart
 	elif [ -z "$1" ]
     	then
 		echo "[x] FATAL ERROR: No PHP server selected"
 		exit 1
 	else
-		echo "[x] FATAL ERROR: Invalid PHP server selected (valid choices: 5 or 6) - you have selected "$1""
+		echo "[x] FATAL ERROR: Invalid PHP server selected (valid choices: 5 or 7) - you have selected "$1""
 		exit 1
 	fi
 }
@@ -260,16 +267,16 @@ server {
 	elif [ "$1" == 'apache' ]
 	then
 		sudo apt-get install -y apache2
-APACHE_CONFIG=
-'<VirtualHost *:80>
+APACHE_CONFIG='
+<VirtualHost *:80>
 
   DocumentRoot '$MAGENTO_HOME'
+  ServerName www.'$HOST_NAME'
 
   <Directory '$MAGENTO_HOME'>
     Options Indexes FollowSymLinks
     AllowOverride All
-    Order allow,deny
-    allow from all
+    Require all granted
   </Directory>
 
   ErrorLog '$INSTALL_DIR'/error.log
@@ -277,13 +284,13 @@ APACHE_CONFIG=
   CustomLog '$INSTALL_DIR'/access.log combined
 
 </VirtualHost>'
-	sudo a2enmod rewrite
+	sudo a2dissite 000-default.conf
 	sudo rm -f /etc/apache2/sites-enabled/000-default.conf
-
 	# Add the Apache virtual host file
 	echo "$APACHE_CONFIG" > ~/magento2.conf
-	sudo mv -f ~/magento2.conf 	/etc/apache2/sites-enabled/magento2.conf
-
+	sudo mv -f ~/magento2.conf 	/etc/apache2/sites-available/magento2.conf
+  sudo a2ensite magento2.conf
+  sudo a2enmod rewrite
 	elif [ -z "$1" ]
     then
 		red "FATAL ERROR: No Web server selected"
@@ -358,10 +365,8 @@ Enviroment () {
 
 ComposerInstall () {
 	green "Installing Composer"
-
 	curl -sS https://getcomposer.org/installer | php
 	sudo mv composer.phar /usr/local/bin/composer
-
 	mkdir /home/$USER_NAME/.composer
 	AUTH_JSON='
 	{
@@ -394,12 +399,7 @@ MagentoInstall () {
 
 Mgit () {
 	red "Downloading MAgento Via GIT"
-	if [ -d "$INSTALL_DIR"/public_html ]; then
-		rm -rf "$INSTALL_DIR"/public_html
-	else
-		mkdir -p $INSTALL_DIR/{public_html,logs}
-	fi
-
+  CreateInstallDir
 	cd "$INSTALL_DIR"
 	git clone https://github.com/magento/magento2.git public_html
 	cd "$MAGENTO_HOME"
@@ -408,13 +408,7 @@ Mgit () {
 
 Mcomposer () {
 	green 'Download Magento Via Composer'
-	if [ -d "$INSTALL_DIR"/public_html ]; then
-		rm -rf "$INSTALL_DIR"/public_html
-		red 'Direcotry Existis REMOVING Now!'
-	else
-		mkdir -p $INSTALL_DIR/{public_html,logs}
-		green "Creating Directories"
-	fi
+	CreateInstallDir
 	cd "$INSTALL_DIR"
 	green "Creating Composer Project"
 	composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition public_html
@@ -438,6 +432,20 @@ Mcli() {
 	--currency=$currency \
 	--timezone=$timezone \
 	--use-rewrites=1
+}
+
+CreateInstallDir () {
+  if [ -d "$INSTALL_DIR"/public_html ]; then
+		sudo rm -rf "$INSTALL_DIR"/public_html
+		red 'Direcotry Existis REMOVING Now!'
+    sudo mkdir -p $INSTALL_DIR/{public_html,logs}
+		green "Creating Directories"
+    sudo chown -R $USER_NAME:$USER_GROUP $INSTALL_DIR
+	else
+		sudo mkdir -p $INSTALL_DIR/{public_html,logs}
+		green "Creating Directories"
+    sudo chown -R $USER_NAME:$USER_GROUP $INSTALL_DIR
+	fi
 }
 
 Permissions () {
